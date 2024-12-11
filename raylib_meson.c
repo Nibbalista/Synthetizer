@@ -1,70 +1,75 @@
-/*******************************************************************************************
-*
-*   raylib [core] example - Basic window
-*
-*   Welcome to raylib!
-*
-*   To test examples, just press F6 and execute 'raylib_compile_execute' script
-*   Note that compiled executable is placed in the same folder as .c file
-*
-*   To test the examples on Web, press F6 and execute 'raylib_compile_execute_web' script
-*   Web version of the program is generated in the same folder as .c file
-*
-*   You can find all basic examples on C:\raylib\raylib\examples folder or
-*   raylib official webpage: www.raylib.com
-*
-*   Enjoy using raylib. :)
-*
-*   Example originally created with raylib 1.0, last time updated with raylib 1.0
-*
-*   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
-*   BSD-like license that allows static linking with closed source software
-*
-*   Copyright (c) 2013-2024 Ramon Santamaria (@raysan5)
-*
-********************************************************************************************/
+#include "raylib.h"       
+#include <math.h>         // sin(), PI
+#include <stdlib.h>       // malloc, exit()
+#include "stdio.h"        // printf
 
-#include "raylib.h"
 
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
+#define SAMPLE_RATE 44100 
+#define BUFFER_SIZE 44100 //Size for 1 second
+#define AMPLITUDE_MAX 32000
+
 int main(void)
 {
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    const int screenWidth = 1920;
-    const int screenHeight = 1080;
+    // 1. App Init
+    InitWindow(800, 600, "Synthétiseur");
+    InitAudioDevice();                    
+    SetTargetFPS(60);                     
 
-    InitWindow(screenWidth, screenHeight, "Synthetizer");
+    // 2. Sin Wave Creation from Raylib's Wave struct
+    Wave wave = {
+        .frameCount = BUFFER_SIZE,  
+        .sampleRate = SAMPLE_RATE, 
+        .sampleSize = 16,          // in bits (16 bits)
+        .channels = 1              // 1 = Mono ; TO DO : 2 = Stéréo
+    };
 
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
-
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-
-            ClearBackground(BLACK);
-
-            DrawText("Synthetizer", 100, 200, 80, PURPLE);
-
-        EndDrawing();
-        //----------------------------------------------------------------------------------
+    // 3. Malloc
+    wave.data = malloc(BUFFER_SIZE * sizeof(short)); // Dynamic Allocation !
+    //Error
+    if (wave.data == NULL) {
+        printf("Malloc Error");
+        exit(EXIT_FAILURE); 
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+    short* buffer = (short*)wave.data; // Pointeur pour manipuler les données audio
+
+    // 4. Wave parameter
+    float frequency = 440.0f; // (440 Hz = LA/A)
+
+    // 5. Génération d'une onde sinusoïdale
+    for (int i = 0; i < BUFFER_SIZE; i++) {
+        float time = (float)i / SAMPLE_RATE;     // time per sample
+        float sinValue = sin(2.0f * PI * frequency * time); 
+        buffer[i] = (short)(sinValue * AMPLITUDE_MAX);     // Cast into Amplitude
+    }
+
+    printf("First 10 samples: \n ");
+    for (int i = 0; i < 10; i++) {
+        printf("%d ", buffer[i]);
+    }
+    printf("\n");
+    // 6. Wave to Sound Conversion
+    Sound sound = LoadSoundFromWave(wave);
+
+    // 7. Sound Playing
+    PlaySound(sound);
+
+    // 8. App Main Loop
+    while (!WindowShouldClose()) {
+        // Drawing
+        BeginDrawing();
+            ClearBackground(BLACK);
+            DrawText("Synthétiseur", 190, 200, 40, PURPLE); 
+            DrawText("Onde Sinusoïdale (LA - 440 Hz)", 190, 250, 20, WHITE);
+        EndDrawing();
+    }
+
+    // 9. Cleaning
+    UnloadSound(sound);
+    UnloadWave(wave);  
+    free(wave.data);        // Free memory from malloc
+    CloseAudioDevice();
+    CloseWindow();         
 
     return 0;
 }
