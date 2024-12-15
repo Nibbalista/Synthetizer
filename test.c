@@ -7,9 +7,9 @@
 #define BUFFER_SIZE 44100   // Taille pour 1 seconde = 44100
 #define AMPLITUDE_MAX 32000
 
-typedef enum { SINUS, SAWTOOTH, SQUARE } WaveType; // Waves Types
+typedef enum { SINUS, SAWTOOTH, SQUARE } WaveType; // Types d'onde disponibles
 
-// Function to generate a signal/wave from a type and a frequency
+// Fonction pour générer une onde en fonction du type
 void GenerateWave(short* buffer, WaveType type, float frequency) {
     for (int i = 0; i < BUFFER_SIZE; i++) {
         float time = (float)i / SAMPLE_RATE;
@@ -31,7 +31,7 @@ void GenerateWave(short* buffer, WaveType type, float frequency) {
     }
 }
 
-// Note frequencies Table
+// Table des fréquences des notes, basé sur le Do (C) à 440 Hz (A4)
 float note_frequencies[] = {
     261.63f,  // C (Do)
     277.18f,  // C# (Do#)
@@ -54,7 +54,7 @@ float note_frequencies[] = {
     739.99f,  // F# (Fa#)
 };
 
-// Function to generate a signal/wave from a type and a frequency
+// Fonction pour obtenir la fréquence de la touche
 float GetFrequencyFromKey(int key) {
     switch (key) {
         case KEY_TAB: return note_frequencies[0];  // Do (C)
@@ -75,17 +75,17 @@ float GetFrequencyFromKey(int key) {
         case '9': return note_frequencies[15];     // Ré# (D#)
         case 'O': return note_frequencies[16];     // Mi (E)
         case 'P': return note_frequencies[17];     // Fa (F)
-        default: return -1.0f;  // Not a Valid Key
+        default: return -1.0f;  // Invalide
     }
 }
 
 int main(void) {
-    // Window and Audio Device Init
+    // Initialisation de la fenêtre et du périphérique audio
     InitWindow(800, 600, "Synthétiseur");
     InitAudioDevice();                    
     SetTargetFPS(60);
 
-    // Sine Wave Creation from Raylib's Wave struct
+    // Création de l'onde de sinusoïdale via la structure Wave de Raylib
     Wave wave = {
         .frameCount = BUFFER_SIZE,
         .sampleRate = SAMPLE_RATE,
@@ -93,7 +93,7 @@ int main(void) {
         .channels = 1      // Mono
     };
 
-    // Malloc for audio datas
+    // Allocation mémoire pour les données audio
     wave.data = malloc(BUFFER_SIZE * sizeof(short));
     if (wave.data == NULL) {
         printf("Erreur d'allocation mémoire.\n");
@@ -104,49 +104,38 @@ int main(void) {
 
     short* buffer = (short*)wave.data;
 
-    // Wave parameter
-    float frequency = -1.0f;   // Default frequency (Invalid frequency so no Note is played)
-    WaveType waveType = SINUS; // Default wave type (Sine Wave)
+    // Paramètre de l'onde
+    float frequency = -1.0f;         // Pas de note par défaut
+    WaveType waveType = SINUS;        // Type d'onde par défaut (Onde Sinusoïdale)
 
-    // Generate the default Wave 
-    GenerateWave(buffer, waveType, 440.0f);  // Generating a default wave
+    // Générer l'onde sans la jouer
+    GenerateWave(buffer, waveType, 440.0f);  // Générer une onde initiale (A440)
 
     Sound sound = LoadSoundFromWave(wave);
-    StopSound(sound);  // Default is not playing
+    StopSound(sound);  // On arrête le son par défaut
 
-    //  App Main Loop
+    // Boucle principale de l'application
     while (!WindowShouldClose()) {
-        // Detecting key presses
+        // Détection des touches du clavier pour changer la fréquence
         int key = GetKeyPressed();
         if (key != 0) {
-            // Changing Wave Type with Hotkeys : F1, F2, F3
-            if (key == KEY_F1) {
-                waveType = SINUS;
-            } else if (key == KEY_F2) {
-                waveType = SAWTOOTH;
-            } else if (key == KEY_F3) {
-                waveType = SQUARE;
-            }
-            
-            // Getting the frequency associated to a hotkey
             frequency = GetFrequencyFromKey(key);
             if (frequency > 0.0f) {
-                GenerateWave(buffer, waveType, frequency);
-                StopSound(sound);  // Stop the previous note
-                sound = LoadSoundFromWave(wave);  // Load the new one
-                PlaySound(sound);  // Then play it
+                GenerateWave(buffer, waveType, frequency);  // Générer la nouvelle onde
+                StopSound(sound);  // Arrêter l'ancienne note
+                sound = LoadSoundFromWave(wave);  // Charger la nouvelle note
+                PlaySound(sound);  // Jouer la nouvelle note
             }
         }
 
-        // Drawing UI
+        // Dessiner l'interface utilisateur
         BeginDrawing();
             ClearBackground(BLACK);
 
             DrawText("Synthétiseur", 250, 50, 40, PURPLE); 
             DrawText("Appuyez sur les touches pour jouer des notes", 180, 100, 20, WHITE);
-            DrawText("F1: Onde Sinusoïdale | F2: Dent de Scie | F3: Signal Carré", 120, 200, 20, WHITE);
 
-            // Showing the frequency of the note playing
+            // Affichage de la fréquence actuelle (ou message si aucune touche pressée)
             if (frequency > 0.0f) {
                 char frequencyText[100];
                 snprintf(frequencyText, sizeof(frequencyText), "Fréquence: %.2f Hz", frequency);
@@ -157,7 +146,7 @@ int main(void) {
         EndDrawing();
     }
 
-    // Cleaning and Closing
+    // Nettoyage et fermeture
     UnloadSound(sound);
     free(wave.data);       
     CloseAudioDevice();
