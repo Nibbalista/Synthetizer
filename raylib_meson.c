@@ -56,11 +56,15 @@ int main(void)
 
     // 8. App Main Loop
     while (!WindowShouldClose()) {
+        if (!IsSoundPlaying(sound)) {
+            PlaySound(sound); // Replaying sound when it ends   
+        }
+
         // Drawing
         BeginDrawing();
             ClearBackground(BLACK);
             DrawText("Synthétiseur", 190, 200, 40, PURPLE); 
-            DrawText("Onde Sinusoïdale (LA - 440 Hz)", 190, 250, 20, WHITE);
+            DrawText("Onde Sinusoïdale (LA/A - 440 Hz)", 190, 250, 20, WHITE);
         EndDrawing();
     }
 
